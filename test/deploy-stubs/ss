@@ -1,0 +1,3 @@
+#!/bin/bash
+# Stand-in for ss: nothing listens on the forwarder's port.
+. "$(dirname "$0")/_log"

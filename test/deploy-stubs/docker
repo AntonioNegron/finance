@@ -1,0 +1,38 @@
+#!/bin/bash
+# Stand-in for docker: images are files in $STUB_STATE/images (holding their
+# commit); `compose up` makes "current" the running one.
+. "$(dirname "$0")/_log"
+I="$STUB_STATE/images"
+mkdir -p "$I"
+case "$1" in
+  network) echo 172.17.0.1 ;;
+  ps) [ -f "$STUB_STATE/running" ] && echo finance-forwarder ;;
+  build)
+    [ -n "${STUB_BUILD_FAIL:-}" ] && { echo "stub build failure"; exit 1; }
+    while [ $# -gt 0 ]; do
+      case $1 in -t) tag=$2; shift ;; --build-arg) commit=${2#FINANCE_COMMIT=}; shift ;; esac
+      shift
+    done
+    echo "$commit" >"$I/$tag" ;;
+  tag) [ -f "$I/$2" ] && cp "$I/$2" "$I/$3" ;;
+  rmi) rm -f "$I/${*: -1}" ;;
+  image)
+    case $2 in
+      inspect) [ -f "$I/$3" ] || exit 1; [ "${4:-}" = --format ] && echo "FINANCE_COMMIT=$(cat "$I/$3")" ;;
+      ls) for f in "$I"/finance-app:*; do [ -e "$f" ] && echo "${f##*:}"; done ;;
+    esac ;;
+  run)
+    if [[ "$*" == *hash-password* ]]; then
+      read -r pw
+      printf '%s' "${#pw}" >"$STUB_STATE/hashed-length" # the length only
+      echo 'scrypt$15$8$1$c3R1Yg$c3R1Yg'
+    fi ;;
+  rm) ;;
+  compose)
+    case "$*" in
+      *version*) ;;
+      *" config -q"*) ;;
+      *" up "* | *" restart "*) cp "$I/finance-app:current" "$STUB_STATE/running" ;;
+      *" down"*) rm -f "$STUB_STATE/running" ;;
+    esac ;;
+esac

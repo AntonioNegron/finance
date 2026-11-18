@@ -50,7 +50,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   };
   return {
     serverURL: need('ACTUAL_SERVER_URL'),
-    syncId: need('ACTUAL_SYNC_ID'),
+    // The OptiPlex install keeps it in the secrets file with what Antonio typed; dev passes it in the environment.
+    syncId: env.ACTUAL_SYNC_ID || secret('ACTUAL_SYNC_ID'),
     dataDir: need('FINANCE_DATA_DIR'),
     port: Number(env.FINANCE_PORT || 8080),
     host: env.FINANCE_HOST || '0.0.0.0',

@@ -1,0 +1,74 @@
+# The finance app on the OptiPlex. install.sh copies this to /opt/finance/compose.yml
+# (root-owned) and fills in the @...@ values; the updater never changes it.
+# Rerun the install to change it.
+#
+#   phone ─ Caddy ─▶ @BRIDGE_IP@:@PORT@ ─▶ forwarder ─▶ app:8080
+#   app ─▶ forwarder:5006 ─▶ host.docker.internal:5006 (Actual)
+#
+# The app is only on "inside" (internal: no route out, not even to the host).
+# The forwarder is the only bridge, with a fixed config of two TCP forwards.
+name: finance
+
+x-logging: &logging
+  # Logs go to the OptiPlex's journal (journalctl -t finance-app), not to Docker's
+  # log files: with the cache off, `docker logs` and so Dozzle can't read them.
+  driver: syslog
+  options:
+    syslog-address: unixgram:///dev/log
+    tag: "{{.Name}}"
+    cache-disabled: "true"
+
+services:
+  app:
+    image: finance-app:current      # built on the OptiPlex by the updater
+    pull_policy: never
+    container_name: finance-app
+    restart: unless-stopped
+    user: "@UID@:@GID@"              # the finance user: not root, not in the docker group
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      TZ: America/New_York
+      ACTUAL_SERVER_URL: http://forwarder:5006
+      FINANCE_SECRETS_FILE: /run/secrets/finance.env
+      FINANCE_SYNC_MINUTES: "15"
+    volumes:
+      - @BASE@/data:/data                                      # the only writable place
+      - @BASE@/secrets/finance.env:/run/secrets/finance.env:ro
+    networks:
+      - inside
+    logging: *logging
+
+  forwarder:
+    image: haproxy:3.2.26-alpine3.24@sha256:1c3568e520453cc8ba98c39501febcf450429c80e6cc27ecad779961d76e597c
+    container_name: finance-forwarder
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - @BASE@/forwarder/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      # Docker's bridge address only: containers on the OptiPlex (Caddy) reach it,
+      # the home network doesn't.
+      - "@BRIDGE_IP@:@PORT@:8080"
+    networks:
+      - inside
+      - outside
+    logging: *logging
+
+networks:
+  inside:
+    internal: true
+  outside: {}

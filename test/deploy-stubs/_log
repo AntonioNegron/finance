@@ -1,0 +1,2 @@
+# Sourced by every stand-in: record the call (argv only) in $STUB_STATE/calls.
+printf '%s %s\n' "$(basename "$0")" "$*" >>"$STUB_STATE/calls"

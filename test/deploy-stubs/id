@@ -1,0 +1,10 @@
+#!/bin/bash
+# Stand-in for id: the test runs as root, and the finance user exists once useradd ran.
+. "$(dirname "$0")/_log"
+case "$*" in
+  -u) echo 0 ;;
+  "-u finance" | "-g finance") [ -f "$STUB_STATE/user" ] && echo 1234 || exit 1 ;;
+  "-nG finance") [ -f "$STUB_STATE/user" ] && echo "finance ${STUB_EXTRA_GROUPS:-}" || exit 1 ;;
+  finance) [ -f "$STUB_STATE/user" ] || exit 1 ;;
+  *) exit 1 ;;
+esac

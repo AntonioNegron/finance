@@ -1,0 +1,6 @@
+#!/bin/bash
+# Stand-in for curl on /healthz: "ok <commit>" for the running image, unless the
+# test made that commit unhealthy.
+. "$(dirname "$0")/_log"
+running=$(cat "$STUB_STATE/running" 2>/dev/null) || exit 7
+if [ "$running" = "${STUB_BAD_COMMIT:-}" ]; then printf 'error %s' "$running"; else printf 'ok %s' "$running"; fi

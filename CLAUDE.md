@@ -27,7 +27,7 @@ Never try to reach the real data, even "just to check": not through the OptiPlex
 - **Read-only to Actual** until a decision says otherwise: the app uses only the Actual API functions listed in [docs/specs/actual-access.md](docs/specs/actual-access.md). A test fails the build if any other one is used.
 - **No data in logs:** events and counts only, never amounts, payees, account or category names, notes or transaction dates. A test checks this against the fake budget. Details may show on screen (only Antonio sees it), never in logs.
 - **No way out:** the app never calls the internet. No CDNs, web fonts, analytics or outside scripts; everything is bundled.
-- **Its own login** on every route except `/healthz`, which answers only `ok` or `error`.
+- **Its own login** on every route except `/healthz`, which answers only `ok` or `error` and the running commit ([decision](docs/decisions/2026-11-17-deploys.md)).
 - **No secrets in the repo:** they live in a root-owned file on the OptiPlex that Antonio fills in. `.env.example` shows names only. A secret scanner runs before every commit.
 - **Official docs first:** read the current Actual API docs before using the API; note the URL and version in the report.
 - **On the OptiPlex:** the homelab repo's rules apply (fixed `optiplex` commands only; grants are Antonio's). The finance app's folder, secrets, logs and network, and the Actual server, are off-limits. No grant opens them.

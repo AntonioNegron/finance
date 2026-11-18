@@ -1,0 +1,12 @@
+# Installed by install.sh: checks the finance repo's deploy branch every 5 minutes.
+[Unit]
+Description=Check the finance app's deploy branch every 5 minutes
+
+[Timer]
+OnActiveSec=1min
+OnBootSec=3min
+OnUnitInactiveSec=5min
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

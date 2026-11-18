@@ -1,5 +1,6 @@
 # The finance app. Build from the repo root:
-#   docker build -f deploy/Dockerfile -t finance-app .
+#   docker build -f deploy/Dockerfile --build-arg FINANCE_COMMIT=$(git rev-parse HEAD) -t finance-app .
+# On the OptiPlex the updater builds it; deploy/compose.yml runs it.
 # Pinned base: node 24.22.3 on Debian bookworm (slim), by digest.
 ARG NODE_IMAGE=node:24.22.3-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54
 
@@ -18,7 +19,10 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
 FROM ${NODE_IMAGE}
-ENV NODE_ENV=production \
+# The commit this image was built from, shown on /healthz (the updater passes it).
+ARG FINANCE_COMMIT=unknown
+ENV FINANCE_COMMIT=${FINANCE_COMMIT} \
+    NODE_ENV=production \
     FINANCE_DATA_DIR=/data \
     FINANCE_PORT=8080 \
     FINANCE_HOST=0.0.0.0
