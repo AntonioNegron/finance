@@ -1,6 +1,6 @@
 # Plan
 
-*Updated 2026-11-17*
+*Updated 2026-11-17 (evening)*
 
 ## Goal
 
@@ -56,15 +56,20 @@ Each layer is there in case another one fails:
 ## Phases
 
 - **Phase 0, build on a fake budget** (NUC only, nothing on the OptiPlex): [F0-1](tasks/F0-1.md). Antonio reviews the screens in [screens/](screens/). *Status 2026-11-17: F0-1 built and tested on the NUC ([report](tasks/F0-1.report.md)); container image not built (no Docker on the NUC); waiting for Antonio's screen review.*
-- **Phase 1, the locked box on the OptiPlex**: Claude Code writes the install and deploy scripts and the Caddy route without touching the real data; Antonio runs the install with `sudo`, types the secrets at a hidden prompt, and logs in on his phone. Needs open questions 1, 2 and 5.
+- **Phase 1, the locked box on the OptiPlex**: Claude Code writes the install and deploy scripts and the Caddy route without touching the real data; Antonio runs the install with `sudo`, types the secrets at a hidden prompt, and logs in on his phone. Needs open questions 1 and 5.
 - **Phase 2, budget builder**: needs open question 3.
 - **Phase 3, sharing numbers by permission**: `finance-share`, run only by Antonio on the OptiPlex: picks the least data a request needs (for example category totals, rounded, no payees or dates), shows a preview, and saves it only after he types `yes`.
 - **Phase 4, alerts**: needs open question 4. Until then, unusual charges show in the app only.
 
 ## Open questions (Antonio decides)
 
-1. **Actual's version and encryption:** [manual step 1](manual-setup.md#1-actual-version-and-encryption). No amounts involved.
-2. **Who deploys new versions:** Claude Code runs a fixed `optiplex finance-deploy` (builds the app from a pushed commit and restarts it; prints only the commit, up/down and `ok`), *or* Antonio runs every deploy himself. Claude's recommendation: the first; the layers above keep the data in, and it spares him a step per update.
-3. **Budget builder:** the app writes budget amounts into Actual (each change previewed, applied only when he taps confirm; nothing else ever written), *or* it builds a plan he types into Actual himself.
-4. **Alerts on the phone:** in the app only, *or* a push notification. A Telegram bot would send alert text through Telegram's servers; a self-hosted push (such as ntfy) keeps it at home but only reaches him at home or on WireGuard.
-5. **The app's name**, once the home names (deSEC) are settled.
+1. **Actual's version:** [manual step 1](manual-setup.md#1-actual-version-and-encryption). Encryption is answered: off ([decision](decisions/2026-11-17-encryption-off.md)).
+2. ~~Who deploys~~ decided: Antonio does the one-time install, Claude Code runs updates ([decision](decisions/2026-11-17-deploys.md))
+3. **Budget builder.** Antonio hasn't set up a proper budget yet ("they're always off") and wants help setting it up right. Proposed, to confirm:
+   - The app works out suggested amounts **on the OptiPlex from his own history**, so no one else sees the numbers: bills from the Bills screen, a typical month for everyday spending, and the yearly or irregular costs spread per month.
+   - He adjusts the suggestions on his phone.
+   - Then either the app **writes the budget amounts into Actual** when he taps confirm (nothing else ever written), *or* he types them into Actual himself.
+   - Claude helps in chat with the method and the categories. Advice on his actual amounts only by [permission request](README.md#asking-for-numbers).
+4. ~~Alerts~~ decided: in the app for now ([decision](decisions/2026-11-17-alerts-in-app.md))
+5. **The app's name:** proposed `finance.home.lan` for now, moving with the other apps when the deSEC names are settled.
+6. **Screen review** of [screens/](screens/): savings goals in their own "Saving" section? Fold on-track categories away on Spending? A "Not a bill" button for false alarms like Cinema 8?

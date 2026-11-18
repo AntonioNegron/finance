@@ -6,7 +6,7 @@ None of these steps shares an amount, a payee or a password with anyone.
 
 ## 1. Actual version and encryption
 
-*Needs: nothing. For: Phase 1 (the API package must match the server). Status: to do*
+*Needs: nothing. For: Phase 1 (the API package must match the server). Status: encryption done 2026-11-17 (off); version to do*
 
 Phone or laptop, open Actual (`budget.home.lan`, or `192.168.50.25:5006`) → **Settings**:
 1. Note the **version numbers** Settings shows (the app and the server)
@@ -17,4 +17,4 @@ Phone or laptop, open Actual (`budget.home.lan`, or `192.168.50.25:5006`) → **
 
 *Needs: 1, Phase 1's task done. Status: Phase 1 writes the exact steps*
 
-You'll run one `sudo` command, type the Actual password (and the encryption password, if on) and a new app password at a hidden prompt, then open the app on your phone and log in.
+You'll run one `sudo` command, type the Actual password and a new app password at a hidden prompt, then open the app on your phone and log in.
