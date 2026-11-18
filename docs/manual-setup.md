@@ -6,15 +6,19 @@ None of these steps shares an amount, a payee or a password with anyone.
 
 ## 1. Actual version and encryption
 
-*Needs: nothing. For: Phase 1 (the API package must match the server). Status: encryption done 2026-11-17 (off); version to do*
+*Status: done 2026-11-17. Client and server v26.4.0 (26.11.0 offered); end-to-end encryption off.*
 
-Phone or laptop, open Actual (`budget.home.lan`, or `192.168.50.25:5006`) → **Settings**:
-1. Note the **version numbers** Settings shows (the app and the server)
-2. Find the **encryption** section and note whether end-to-end encryption is **on or off**
-3. Tell Claude in chat: the version(s) and on/off. Nothing else.
+## 2. Update Actual to 26.11.0, pinned
 
-## 2. Install the locked box on the OptiPlex
+*Needs: 1. Status: to do. [Decision](decisions/2026-11-17-actual-26-11.md)*
 
-*Needs: 1, Phase 1's task done. Status: Phase 1 writes the exact steps*
+1. **Backup:** in Actual, Settings → **Export data**; keep the file on your laptop or phone.
+2. **OptiPlex:** change the image from `latest` to `26.11.0` in Actual's compose file, pull and restart (Claude gives the exact command in chat).
+3. **Check:** Actual's Settings shows client and server **v26.11.0**; your budget and accounts look as before; bank sync still works.
+4. Tell Claude: done, or the error.
 
-You'll run one `sudo` command, type the Actual password and a new app password at a hidden prompt, then open the app on your phone and log in.
+## 3. Install the locked box on the OptiPlex
+
+*Needs: 2, [F1-1](tasks/F1-1.md) done. Status: F1-1 writes the exact steps here*
+
+In short: paste one small bootstrap command, add the key it prints to the GitHub repo as a read-only deploy key, type the Actual password, a new app password and the budget's Sync ID at the prompts, then open `https://finance.home.lan` on your phone, log in, and switch off the accounts that aren't yours.

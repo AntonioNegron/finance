@@ -14,7 +14,7 @@ From [what to build first](decisions/2026-11-17-what-to-build-first.md):
 2. **Spending vs. budget by category**: this month, over-budget first
 3. **Upcoming bills and subscriptions**: what's due next and what it costs per month
 4. **Unusual charges**: duplicates, unusually large ones, new merchants
-5. **An easier way to build the budget** (Phase 2, after open question 3)
+5. **An easier way to build the budget** (Phase 2, [decision](decisions/2026-11-17-budget-builder.md))
 
 Some accounts in the budget aren't his. The app has a setting to leave accounts out of every total; he picks them himself.
 
@@ -32,8 +32,8 @@ OptiPlex
  └─ Caddy ── finance.<home name> ──▶ Antonio's phone
 
 NUC: Claude Code ── code, fake budget, tests ── git ──▶ GitHub
-       └─ optiplex finance-deploy (open question 2)
-            build + restart, prints status only
+       └─ moves the `deploy` branch; the OptiPlex pulls it,
+            builds and restarts; Claude Code sees /healthz only
 ```
 
 - **Stack:** Node.js + TypeScript with the official `@actual-app/api` package (Actual's only official client), and a phone-first web page. Claude's pick, because the API package uses the same budget engine as Actual itself.
@@ -53,23 +53,21 @@ Each layer is there in case another one fails:
 7. **Numbers only by permission.** [Asking for numbers](README.md#asking-for-numbers); `finance-share` in Phase 3.
 8. **Repo hygiene.** Secret scanner, `.gitignore`, the rules in [../CLAUDE.md](../CLAUDE.md).
 
+**What this doesn't cover:** Claude Code manages Caddy and Dozzle, so the app doesn't count on them: its own login and its data-free logs are what keep the data in if either is misconfigured. Deliberately rewiring them to get at the data is ruled out by the rules, not by the machine.
+
 ## Phases
 
-- **Phase 0, build on a fake budget** (NUC only, nothing on the OptiPlex): [F0-1](tasks/F0-1.md). Antonio reviews the screens in [screens/](screens/). *Status 2026-11-17: F0-1 built and tested on the NUC ([report](tasks/F0-1.report.md)); container image not built (no Docker on the NUC); waiting for Antonio's screen review.*
-- **Phase 1, the locked box on the OptiPlex**: Claude Code writes the install and deploy scripts and the Caddy route without touching the real data; Antonio runs the install with `sudo`, types the secrets at a hidden prompt, and logs in on his phone. Needs open questions 1 and 5.
-- **Phase 2, budget builder**: needs open question 3.
+- **Phase 0, build on a fake budget** (NUC only, nothing on the OptiPlex): [F0-1](tasks/F0-1.md). Antonio reviews the screens in [screens/](screens/). *Status 2026-11-17: F0-1 built and tested on the NUC ([report](tasks/F0-1.report.md)); container image not built (no Docker on the NUC); screens reviewed; changes go into F1-1.*
+- **Phase 1, the locked box on the OptiPlex**: [F1-1](tasks/F1-1.md) (the screen changes, then the install, the updater and the Caddy route, all written without touching the real data). Then Antonio updates Actual ([manual step 2](manual-setup.md)) and runs the install ([manual step 3](manual-setup.md)).
+- **Phase 2, budget builder** ([decision](decisions/2026-11-17-budget-builder.md)).
 - **Phase 3, sharing numbers by permission**: `finance-share`, run only by Antonio on the OptiPlex: picks the least data a request needs (for example category totals, rounded, no payees or dates), shows a preview, and saves it only after he types `yes`.
-- **Phase 4, alerts**: needs open question 4. Until then, unusual charges show in the app only.
+- **Later, alerts by push**, if Antonio wants them ([decision](decisions/2026-11-17-alerts-in-app.md)).
 
 ## Open questions (Antonio decides)
 
-1. **Actual's version:** [manual step 1](manual-setup.md#1-actual-version-and-encryption). Encryption is answered: off ([decision](decisions/2026-11-17-encryption-off.md)).
+1. ~~Actual's version~~ decided: update to 26.11.0, pinned ([decision](decisions/2026-11-17-actual-26-11.md))
 2. ~~Who deploys~~ decided: Antonio does the one-time install, Claude Code runs updates ([decision](decisions/2026-11-17-deploys.md))
-3. **Budget builder.** Antonio hasn't set up a proper budget yet ("they're always off") and wants help setting it up right. Proposed, to confirm:
-   - The app works out suggested amounts **on the OptiPlex from his own history**, so no one else sees the numbers: bills from the Bills screen, a typical month for everyday spending, and the yearly or irregular costs spread per month.
-   - He adjusts the suggestions on his phone.
-   - Then either the app **writes the budget amounts into Actual** when he taps confirm (nothing else ever written), *or* he types them into Actual himself.
-   - Claude helps in chat with the method and the categories. Advice on his actual amounts only by [permission request](README.md#asking-for-numbers).
+3. ~~Budget builder~~ decided: suggestions from his history, written to Actual when he confirms ([decision](decisions/2026-11-17-budget-builder.md))
 4. ~~Alerts~~ decided: in the app for now ([decision](decisions/2026-11-17-alerts-in-app.md))
-5. **The app's name:** proposed `finance.home.lan` for now, moving with the other apps when the deSEC names are settled.
-6. **Screen review** of [screens/](screens/): savings goals in their own "Saving" section? Fold on-track categories away on Spending? A "Not a bill" button for false alarms like Cinema 8?
+5. ~~Name~~ decided: `finance.home.lan` for now ([decision](decisions/2026-11-17-screens-and-name.md))
+6. ~~Screen review~~ decided: Saving section, fold on-track categories, "Not a bill" ([decision](decisions/2026-11-17-screens-and-name.md))
