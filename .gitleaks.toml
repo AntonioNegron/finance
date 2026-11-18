@@ -1,0 +1,3 @@
+# Default gitleaks rules, plus the dev-only throwaway values below.
+[extend]
+useDefault = true

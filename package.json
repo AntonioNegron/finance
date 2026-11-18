@@ -1,0 +1,35 @@
+{
+  "name": "finance",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.dev.json --noEmit",
+    "secrets:scan": "scripts/gitleaks.sh git --redact --no-banner && scripts/gitleaks.sh dir --redact --no-banner .",
+    "dev:fake": "tsx dev/fake.ts",
+    "dev:app": "tsx dev/app.ts",
+    "test": "npm run typecheck && node --import tsx --test --test-concurrency=1 test/*.test.ts && npm run secrets:scan",
+    "screens": "tsx dev/screens.ts",
+    "start": "node dist/app/src/main.js"
+  },
+  "dependencies": {
+    "@actual-app/api": "26.11.0"
+  },
+  "devDependencies": {
+    "@actual-app/sync-server": "26.11.0",
+    "@types/node": "24.19.2",
+    "playwright": "1.65.1",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  },
+  "allowScripts": {
+    "argon2": false,
+    "bcrypt": false,
+    "better-sqlite3": false,
+    "esbuild": false
+  }
+}

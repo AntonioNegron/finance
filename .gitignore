@@ -1,0 +1,17 @@
+node_modules/
+dist/
+# data folders (fake server, app cache, app storage)
+data/
+dev/data/
+app/data/
+# env files: only the example is committed
+.env*
+!.env.example
+# logs
+*.log
+logs/
+test-results/
+# Actual's local budget cache
+.actual-cache/
+# downloaded tools (gitleaks)
+.tools/
