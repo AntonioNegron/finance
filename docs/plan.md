@@ -55,7 +55,7 @@ Each layer is there in case another one fails:
 
 ## Phases
 
-- **Phase 0, build on a fake budget** (NUC only, nothing on the OptiPlex): [F0-1](tasks/F0-1.md). Antonio reviews the screens in [screens/](screens/).
+- **Phase 0, build on a fake budget** (NUC only, nothing on the OptiPlex): [F0-1](tasks/F0-1.md). Antonio reviews the screens in [screens/](screens/). *Status 2026-11-17: F0-1 built and tested on the NUC ([report](tasks/F0-1.report.md)); container image not built (no Docker on the NUC); waiting for Antonio's screen review.*
 - **Phase 1, the locked box on the OptiPlex**: Claude Code writes the install and deploy scripts and the Caddy route without touching the real data; Antonio runs the install with `sudo`, types the secrets at a hidden prompt, and logs in on his phone. Needs open questions 1, 2 and 5.
 - **Phase 2, budget builder**: needs open question 3.
 - **Phase 3, sharing numbers by permission**: `finance-share`, run only by Antonio on the OptiPlex: picks the least data a request needs (for example category totals, rounded, no payees or dates), shows a preview, and saves it only after he types `yes`.

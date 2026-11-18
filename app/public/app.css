@@ -47,6 +47,7 @@ main { padding: 0 12px; max-width: 640px; margin: 0 auto; }
 .cats li { padding: 0; }
 .cat { display: block; width: 100%; padding: 12px 16px; color: inherit; }
 .cat .row { margin: 0; }
+.cat .row > span:first-child { display: flex; flex-direction: column; min-width: 0; }
 .months { display: flex; align-items: center; justify-content: space-between; margin: 8px 0; }
 .months a, .months span { min-width: 48px; min-height: 48px; display: grid; place-items: center; font-size: 28px; background: var(--card); border-radius: 24px; }
 .months span { visibility: hidden; }
