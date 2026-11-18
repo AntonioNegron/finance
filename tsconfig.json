@@ -8,8 +8,14 @@
     "skipLibCheck": true,
     "outDir": "dist",
     "rootDir": ".",
-    "types": ["node"],
-    "sourceMap": false
+    "types": [
+      "node"
+    ],
+    "sourceMap": false,
+    "rewriteRelativeImportExtensions": true,
+    "allowImportingTsExtensions": true
   },
-  "include": ["app/src/**/*.ts"]
+  "include": [
+    "app/src/**/*.ts"
+  ]
 }
