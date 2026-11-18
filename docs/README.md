@@ -22,6 +22,14 @@ Read this file, then [plan.md](plan.md), then the newest files in [decisions/](d
 5. Claude Code does the task start to finish, commits the work and `tasks/<id>.report.md`, and pushes.
 6. Claude reads the report from the repo, updates `plan.md`, and brings anything that needs a decision to Antonio.
 
+## Shipping an update
+
+The OptiPlex runs whatever commit the `deploy` branch points to: it checks every 5 minutes, builds it, and goes back to the previous version if `/healthz` isn't `ok` within 3 minutes ([decision](decisions/2026-11-17-deploys.md), [deploy/README.md](../deploy/README.md)).
+
+- **Only a commit whose `npm test` passed on the NUC goes to `deploy`.** Claude Code moves it with `git push origin <commit>:deploy` and then checks `https://finance.home.lan/healthz` for `ok <commit>`.
+- A commit that failed on the OptiPlex isn't retried; ship a new commit instead.
+- Moving `deploy` back to an earlier commit is how to roll back.
+
 ## Rules for all three of us
 
 1. **The privacy rule first.** Nobody but Antonio sees real financial data or secrets, unless he approves a specific request ([below](#asking-for-numbers)).

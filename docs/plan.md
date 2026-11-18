@@ -58,7 +58,7 @@ Each layer is there in case another one fails:
 ## Phases
 
 - **Phase 0, build on a fake budget** (NUC only, nothing on the OptiPlex): [F0-1](tasks/F0-1.md). Antonio reviews the screens in [screens/](screens/). *Status 2026-11-17: F0-1 built and tested on the NUC ([report](tasks/F0-1.report.md)); container image not built (no Docker on the NUC); screens reviewed; changes go into F1-1.*
-- **Phase 1, the locked box on the OptiPlex**: [F1-1](tasks/F1-1.md) (the screen changes, then the install, the updater and the Caddy route, all written without touching the real data). Then Antonio updates Actual ([manual step 2](manual-setup.md)) and runs the install ([manual step 3](manual-setup.md)).
+- **Phase 1, the locked box on the OptiPlex**: [F1-1](tasks/F1-1.md) (the screen changes, then the install, the updater and the Caddy route, all written without touching the real data). Then Antonio updates Actual ([manual step 2](manual-setup.md)) and runs the install ([manual step 3](manual-setup.md)). *Status 2026-11-17: F1-1 done ([report](tasks/F1-1.report.md)): screen changes built, install and updater written and dry-run tested on the NUC, Caddy route live, `deploy` branch created. Next: Antonio's manual steps 2 and 3.*
 - **Phase 2, budget builder** ([decision](decisions/2026-11-17-budget-builder.md)).
 - **Phase 3, sharing numbers by permission**: `finance-share`, run only by Antonio on the OptiPlex: picks the least data a request needs (for example category totals, rounded, no payees or dates), shows a preview, and saves it only after he types `yes`.
 - **Later, alerts by push**, if Antonio wants them ([decision](decisions/2026-11-17-alerts-in-app.md)).
