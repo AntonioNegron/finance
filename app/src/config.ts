@@ -13,6 +13,8 @@ export type Config = {
   actualPassword: string;
   encryptionPassword?: string;
   loginHash: string;
+  /** The git commit the running build came from (set at image build), for /healthz. */
+  commit: string;
 };
 
 export function parseKeyValues(text: string): Record<string, string> {
@@ -57,5 +59,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     actualPassword: secret('ACTUAL_PASSWORD'),
     encryptionPassword: secrets.ACTUAL_ENCRYPTION_PASSWORD || undefined,
     loginHash: secret('FINANCE_LOGIN_HASH'),
+    commit: /^[0-9a-f]{7,40}$/.test(env.FINANCE_COMMIT ?? '') ? env.FINANCE_COMMIT! : 'unknown',
   };
 }

@@ -1,8 +1,9 @@
 // The only module that talks to Actual. It uses only the functions listed in
 // docs/specs/actual-access.md (a test enforces this): connect, sync, and read.
 import * as api from '@actual-app/api';
-import { mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 import type { Config } from './config.ts';
 import { addMonths, localToday } from './dates.ts';
 import { log, logError } from './log.ts';
@@ -38,6 +39,20 @@ export type Snapshot = {
 
 export const HISTORY_MONTHS = 13;
 
+/** The installed @actual-app/api version (its package.json isn't exported, so read it beside the entry point). */
+export const API_VERSION: string = (() => {
+  try {
+    const entry = createRequire(import.meta.url).resolve('@actual-app/api');
+    for (let dir = dirname(entry); dir !== dirname(dir); dir = dirname(dir)) {
+      try {
+        const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { name?: string; version?: string };
+        if (pkg.name === '@actual-app/api' && pkg.version) return pkg.version;
+      } catch {}
+    }
+  } catch {}
+  return 'unknown';
+})();
+
 /** Serializes every call into the API (it holds one open budget). */
 let chain: Promise<unknown> = Promise.resolve();
 function exclusive<T>(fn: () => Promise<T>): Promise<T> {
@@ -50,6 +65,8 @@ export class Actual {
   private connected = false;
   snapshot: Snapshot | null = null;
   lastError: string | null = null;
+  /** The Actual server's version, or null if it couldn't be read. */
+  serverVersion: string | null = null;
 
   constructor(private cfg: Config) {}
 
@@ -184,6 +201,9 @@ export class Actual {
     const thisMonth = today.slice(0, 7);
     if (budgetMonths.includes(thisMonth)) budgets.set(thisMonth, await readMonth(thisMonth));
 
+    const sv = await api.getServerVersion();
+    this.serverVersion = 'version' in sv && typeof sv.version === 'string' ? sv.version : null;
+
     this.snapshot = { syncedAt: new Date(), today, accounts, categories, transactions, windowStart, schedules, budgetMonths, budgets };
     this.lastError = null;
     log('sync.ok', {
@@ -191,6 +211,7 @@ export class Actual {
       transactions: transactions.length,
       new_transactions: Math.max(0, transactions.length - before),
       schedules: schedules.length,
+      server_version_match: this.serverVersion === API_VERSION ? 1 : 0,
     });
   }
 }

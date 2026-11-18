@@ -56,6 +56,24 @@ test('every screen and action, then nothing sensitive in the logs', async () => 
     assert.equal((await c.post('/unusual/fine', { key, fine: '1' })).status, 303);
     assert.equal((await c.post('/unusual/fine', { key, fine: '0' })).status, 303);
   }
+  // Every bill marked "Not a bill" and back; every group switched both ways and back.
+  const billPage = await (await c.get('/bills')).text();
+  const billKeys = [...billPage.matchAll(/action="\/bills\/hide"><input type="hidden" name="key" value="([^"]+)"/g)].map((x) => x[1]!.replace(/&amp;/g, '&').replace(/&#39;/g, "'"));
+  assert.ok(billKeys.length >= 5);
+  for (const key of billKeys) {
+    assert.equal((await c.post('/bills/hide', { key, hide: '1' })).status, 303);
+    await c.get('/bills');
+    await c.get('/');
+    assert.equal((await c.post('/bills/hide', { key, hide: '0' })).status, 303);
+  }
+  const groupPage = await (await c.get('/groups')).text();
+  const groups = [...groupPage.matchAll(/name="id" value="([^"]+)"><input type="hidden" name="kind" value="(\w+)"/g)].map((x) => [x[1]!, x[2]!] as const);
+  assert.equal(groups.length, 7);
+  for (const [id, kind] of groups) {
+    assert.equal((await c.post('/groups/kind', { id, kind })).status, 303);
+    await c.get('/categories');
+    assert.equal((await c.post('/groups/kind', { id, kind: kind === 'saving' ? 'spending' : 'saving' })).status, 303);
+  }
   assert.equal((await c.post('/sync', { back: '/bills' })).status, 303);
   await c.req('/sync', { method: 'POST', headers: { accept: 'application/json', origin: app.base } });
   await c.post('/unusual/fine', { key: 'bad key' });
@@ -66,6 +84,7 @@ test('every screen and action, then nothing sensitive in the logs', async () => 
   const lines = output.split('\n').filter(Boolean);
   assert.ok(lines.some((l) => l.includes('login.failed')));
   assert.ok(lines.some((l) => l.includes('sync.ok')));
+  assert.ok(lines.some((l) => l.includes('server_version_match=1')), 'the fake server version matches the API');
 
   // 1. Every line is an event with numbers only (the logger's grammar).
   const bad = lines.filter((l) => !LINE.test(l));

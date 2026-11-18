@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { MAX_FAILS } from '../app/src/auth.ts';
-import { Client, startApp, type RunningApp } from './helpers.ts';
+import { Client, TEST_COMMIT, startApp, type RunningApp } from './helpers.ts';
 
 let app: RunningApp;
 before(async () => {
@@ -13,14 +13,14 @@ after(async () => {
   await app?.stop();
 });
 
-const GETS = ['/', '/categories', '/categories?month=2026-01', '/categories/some-id', '/bills', '/unusual', '/accounts', '/static/app.css', '/static/app.js', '/nope', '/healthz/'];
-const POSTS = ['/sync', '/logout', '/accounts/count', '/unusual/fine', '/', '/nope'];
+const GETS = ['/', '/groups', '/categories', '/categories?month=2026-01', '/categories/some-id', '/bills', '/unusual', '/accounts', '/static/app.css', '/static/app.js', '/nope', '/healthz/'];
+const POSTS = ['/sync', '/logout', '/accounts/count', '/unusual/fine', '/bills/hide', '/groups/kind', '/', '/nope'];
 
-test('/healthz answers only ok or error', async () => {
+test('/healthz answers only ok or error and the running commit', async () => {
   const res = await fetch(`${app.base}/healthz`);
   const text = await res.text();
-  assert.ok(text === 'ok' || text === 'error', 'body');
-  assert.equal(text, 'ok');
+  assert.match(text, /^(ok|error) ([0-9a-f]{7,40}|unknown)$/, 'body');
+  assert.equal(text, `ok ${TEST_COMMIT}`);
   assert.ok(!res.headers.get('set-cookie'));
 });
 

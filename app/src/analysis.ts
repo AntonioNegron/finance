@@ -1,8 +1,38 @@
 // Pure calculations for the screens. No I/O, no logging.
 import type { Account, Category, MonthBudget, Snapshot, Txn } from './actual.ts';
 import { addDays, addMonths, addOneMonth, dayDiff } from './dates.ts';
+import type { GroupKind } from './store.ts';
 
-export type Settings = { excluded: Set<string>; fine: Set<string> };
+export type Settings = {
+  excluded: Set<string>;
+  fine: Set<string>;
+  notBills: Set<string>;
+  groupKinds: ReadonlyMap<string, GroupKind>;
+};
+
+export const emptySettings = (): Settings => ({ excluded: new Set(), fine: new Set(), notBills: new Set(), groupKinds: new Map() });
+
+// ---- Saving vs. spending ----
+
+/** Until Antonio picks, a group counts as saving if its name says so. */
+const SAVING_NAME = /sav|goal|invest/i;
+
+export function isSavingGroup(groupId: string, groupName: string, s: Settings) {
+  const chosen = s.groupKinds.get(groupId);
+  return chosen ? chosen === 'saving' : SAVING_NAME.test(groupName);
+}
+
+export type GroupChoice = { id: string; name: string; saving: boolean; chosen: boolean };
+
+/** The expense category groups, with whether each counts as saving. */
+export function groupChoices(snap: Snapshot, s: Settings): GroupChoice[] {
+  const seen = new Map<string, GroupChoice>();
+  for (const c of snap.categories) {
+    if (c.isIncome || seen.has(c.groupId)) continue;
+    seen.set(c.groupId, { id: c.groupId, name: c.groupName, saving: isSavingGroup(c.groupId, c.groupName, s), chosen: s.groupKinds.has(c.groupId) });
+  }
+  return [...seen.values()];
+}
 
 export const counted = (snap: Snapshot, s: Settings) => snap.accounts.filter((a) => !a.closed && !s.excluded.has(a.id));
 
@@ -13,7 +43,7 @@ function spendingTxns(snap: Snapshot, s: Settings): Txn[] {
   return snap.transactions.filter((t) => ok.has(t.account) && t.category && expense.has(t.category));
 }
 
-export type CategoryRow = { category: Category; budgeted: number; spent: number; left: number };
+export type CategoryRow = { category: Category; budgeted: number; spent: number; left: number; saving: boolean };
 
 export function categoryRows(snap: Snapshot, s: Settings, month: string, mb: MonthBudget | null): CategoryRow[] {
   const spent = new Map<string, number>();
@@ -25,7 +55,7 @@ export function categoryRows(snap: Snapshot, s: Settings, month: string, mb: Mon
     .map((c) => {
       const budgeted = mb?.budgeted[c.id] ?? 0;
       const sp = spent.get(c.id) ?? 0;
-      return { category: c, budgeted, spent: sp, left: budgeted - sp };
+      return { category: c, budgeted, spent: sp, left: budgeted - sp, saving: isSavingGroup(c.groupId, c.groupName, s) };
     })
     .filter((r) => r.budgeted !== 0 || r.spent !== 0);
   // Over budget first (most over first), then by how much of the budget is used.
@@ -36,6 +66,25 @@ export function categoryRows(snap: Snapshot, s: Settings, month: string, mb: Mon
     if (ao) return a.left - b.left;
     return used(b) - used(a) || a.category.name.localeCompare(b.category.name);
   });
+}
+
+export type SpendingView = {
+  /** Over budget, or spending under way with money left: always shown. */
+  attention: CategoryRow[];
+  /** Nothing spent yet, or spent exactly the budget: folded under one row. */
+  onTrack: CategoryRow[];
+  /** Saving categories, in their own section. */
+  saving: CategoryRow[];
+};
+
+export function spendingView(rows: CategoryRow[]): SpendingView {
+  const view: SpendingView = { attention: [], onTrack: [], saving: [] };
+  for (const r of rows) {
+    if (r.saving) view.saving.push(r);
+    else if (r.left >= 0 && (r.spent <= 0 || r.left === 0)) view.onTrack.push(r);
+    else view.attention.push(r);
+  }
+  return view;
 }
 
 export function categoryTxns(snap: Snapshot, s: Settings, categoryId: string, month: string): Txn[] {
@@ -55,6 +104,7 @@ export type Bill = {
   varies: boolean;
   increase: { from: number; to: number } | null;
   fromSchedule: boolean;
+  hidden: boolean; // marked "Not a bill" in the app
 };
 
 const median = (xs: number[]) => {
@@ -112,6 +162,7 @@ export function findBills(snap: Snapshot, s: Settings): Bill[] {
       varies,
       increase,
       fromSchedule: false,
+      hidden: false,
     });
   }
 
@@ -134,8 +185,10 @@ export function findBills(snap: Snapshot, s: Settings): Bill[] {
       varies: false,
       increase: null,
       fromSchedule: true,
+      hidden: false,
     });
   }
+  for (const b of bills) b.hidden = s.notBills.has(b.key);
   return bills.sort((a, b) => a.nextDate.localeCompare(b.nextDate) || a.payee.localeCompare(b.payee));
 }
 
@@ -204,9 +257,11 @@ export function findUnusual(snap: Snapshot, s: Settings): Unusual[] {
 
 export type Home = {
   total: number;
-  budgeted: number;
+  budgeted: number; // spending categories only
   spent: number;
   left: number;
+  saved: number; // put into saving categories this month
+  savingBudgeted: number;
   nextBills: Bill[];
   unusualOpen: number;
 };
@@ -214,14 +269,19 @@ export type Home = {
 export function home(snap: Snapshot, s: Settings, mb: MonthBudget | null): Home {
   const total = counted(snap, s).reduce((sum, a) => sum + a.balance, 0);
   const rows = categoryRows(snap, s, snap.today.slice(0, 7), mb);
-  const budgeted = rows.reduce((sum, r) => sum + r.budgeted, 0);
-  const spent = rows.reduce((sum, r) => sum + r.spent, 0);
+  const sum = (list: CategoryRow[], k: 'budgeted' | 'spent') => list.reduce((n, r) => n + r[k], 0);
+  const spending = rows.filter((r) => !r.saving);
+  const saving = rows.filter((r) => r.saving);
+  const budgeted = sum(spending, 'budgeted');
+  const spent = sum(spending, 'spent');
   return {
     total,
     budgeted,
     spent,
     left: budgeted - spent,
-    nextBills: findBills(snap, s).slice(0, 3),
+    saved: sum(saving, 'spent'),
+    savingBudgeted: sum(saving, 'budgeted'),
+    nextBills: findBills(snap, s).filter((b) => !b.hidden).slice(0, 3),
     unusualOpen: findUnusual(snap, s).filter((u) => !u.fine).length,
   };
 }

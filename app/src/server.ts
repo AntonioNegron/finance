@@ -5,8 +5,8 @@ import { readFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Actual } from './actual.ts';
-import { categoryRows, categoryTxns, findBills, findUnusual, home, type Settings } from './analysis.ts';
+import { API_VERSION, type Actual } from './actual.ts';
+import { categoryRows, categoryTxns, findBills, findUnusual, groupChoices, home, spendingView, type Settings } from './analysis.ts';
 import { Lockout, verifyPassword } from './auth.ts';
 import type { Config } from './config.ts';
 import { addMonths } from './dates.ts';
@@ -98,8 +98,13 @@ function sameOrigin(req: IncomingMessage) {
 export function createApp(cfg: Config, actual: Actual, store: Store) {
   const lockout = new Lockout();
 
-  const settings = (): Settings => ({ excluded: store.excluded, fine: store.fine });
-  const syncState = (back: string): v.SyncState => ({ snap: actual.snapshot, error: actual.lastError, back });
+  const settings = (): Settings => ({ excluded: store.excluded, fine: store.fine, notBills: store.notBills, groupKinds: store.groupKinds });
+  const syncState = (back: string): v.SyncState => ({
+    snap: actual.snapshot,
+    error: actual.lastError,
+    back,
+    version: actual.serverVersion && actual.serverVersion !== API_VERSION ? { server: actual.serverVersion, app: API_VERSION } : null,
+  });
 
   function setSession(res: ServerResponse) {
     const token = randomBytes(32).toString('base64url');
@@ -117,9 +122,10 @@ export function createApp(cfg: Config, actual: Actual, store: Store) {
     const path = url.pathname;
     const method = req.method ?? 'GET';
 
+    // Only "ok" or "error" and the running commit: nothing about the budget.
     if (path === '/healthz') {
       const ok = actual.snapshot !== null && actual.lastError === null;
-      return send(res, ok ? 200 : 503, 'text/plain; charset=utf-8', ok ? 'ok' : 'error');
+      return send(res, ok ? 200 : 503, 'text/plain; charset=utf-8', `${ok ? 'ok' : 'error'} ${cfg.commit}`);
     }
 
     if (method === 'POST' && !sameOrigin(req)) return send(res, 403, 'text/plain; charset=utf-8', 'forbidden');
@@ -187,6 +193,23 @@ export function createApp(cfg: Config, actual: Actual, store: Store) {
         log('unusual.marked', { marked_fine: store.fine.size });
         return redirect(res, '/unusual');
       }
+      if (path === '/bills/hide') {
+        const key = form.get('key') ?? '';
+        if (!/^[ps]:.{1,200}$/s.test(key) || /[\r\n]/.test(key)) return send(res, 400, 'text/plain; charset=utf-8', 'bad request');
+        store.setNotBill(key, form.get('hide') === '1');
+        log('bill.marked', { not_bills: store.notBills.size });
+        return redirect(res, '/bills');
+      }
+      if (path === '/groups/kind') {
+        const id = form.get('id') ?? '';
+        const kind = form.get('kind');
+        if (!actual.snapshot?.categories.some((c) => c.groupId === id && !c.isIncome) || (kind !== 'saving' && kind !== 'spending')) {
+          return send(res, 400, 'text/plain; charset=utf-8', 'bad request');
+        }
+        store.setGroupKind(id, kind);
+        log('setting.changed', { saving_groups: groupChoices(actual.snapshot, settings()).filter((g) => g.saving).length });
+        return redirect(res, '/groups');
+      }
       return send(res, 404, 'text/plain; charset=utf-8', 'not found');
     }
 
@@ -207,7 +230,7 @@ export function createApp(cfg: Config, actual: Actual, store: Store) {
       const prev = month > first ? addMonths(month, -1) : null;
       const next = month < thisMonth ? addMonths(month, 1) : null;
       const rows = categoryRows(snap, s, month, await actual.monthBudget(month));
-      if (path === '/categories') return html(res, v.categoriesPage(sync, month, prev, next, rows));
+      if (path === '/categories') return html(res, v.categoriesPage(sync, month, prev, next, spendingView(rows)));
       const id = decodeURIComponent(path.slice('/categories/'.length));
       const cat = snap.categories.find((c) => c.id === id);
       if (!cat) return html(res, v.notFoundPage(), 404);
@@ -216,6 +239,7 @@ export function createApp(cfg: Config, actual: Actual, store: Store) {
         v.categoryPage(sync, cat.name, month, rows.find((r) => r.category.id === id), categoryTxns(snap, s, id, month), snap.accounts),
       );
     }
+    if (path === '/groups') return html(res, v.groupsPage(sync, groupChoices(snap, s)));
     if (path === '/bills') return html(res, v.billsPage(sync, findBills(snap, s)));
     if (path === '/unusual') return html(res, v.unusualPage(sync, findUnusual(snap, s), snap.accounts));
     if (path === '/accounts') return html(res, v.accountsPage(sync, snap.accounts, s.excluded));

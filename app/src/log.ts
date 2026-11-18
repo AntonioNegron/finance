@@ -18,6 +18,7 @@ export type LogEvent =
   | 'logout'
   | 'setting.changed'
   | 'unusual.marked'
+  | 'bill.marked'
   | 'request.error'
   | 'config.error';
 

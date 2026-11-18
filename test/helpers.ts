@@ -25,13 +25,16 @@ export async function requireFakeServer() {
   if (!(await fakeServerUp())) throw new Error('The fake Actual server is not running. Start it with: npm run dev:fake');
 }
 
+/** The commit the test app reports on /healthz (in production, set at image build). */
+export const TEST_COMMIT = '0123456789abcdef0123456789abcdef01234567';
+
 let nextPort = 5300 + Math.floor(Math.random() * 500);
 
 export async function startApp(): Promise<RunningApp> {
   await requireFakeServer();
   const dataDir = mkdtempSync(join(tmpdir(), 'finance-test-'));
   const port = String(nextPort++);
-  const env = await devAppEnv({ dataDir, port });
+  const env = { ...(await devAppEnv({ dataDir, port })), FINANCE_COMMIT: TEST_COMMIT };
   let out = '';
   const child: ChildProcess = spawn(process.execPath, ['--import', 'tsx', join(ROOT, 'app/src/main.ts')], {
     env,

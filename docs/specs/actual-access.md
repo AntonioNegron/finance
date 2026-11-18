@@ -2,7 +2,7 @@
 
 The app may use only the `@actual-app/api` functions listed here. A test (`test/allowed-functions.test.ts`) reads the **Allowed** list below and fails the build if code in `app/` uses any other, or imports the API anywhere but `app/src/actual.ts`.
 
-Checked against the official reference, `https://actualbudget.org/docs/api/reference`, for `@actual-app/api` 26.11.0 (F0-1, 2026-11-17).
+Checked against the official reference, `https://actualbudget.org/docs/api/reference`, for `@actual-app/api` 26.11.0 (F0-1, 2026-11-17; `getServerVersion` added in F1-1, 2026-11-17).
 
 ## Allowed
 
@@ -25,11 +25,15 @@ Read:
 - `getBudgetMonth`: the budgeted amount per category in a month, for Home and Spending.
 - `getSchedules`: Actual's scheduled bills, merged into Bills.
 
+Check:
+
+- `getServerVersion`: the Actual server's version, read on each sync, to warn when Actual and the app differ. Every screen shows a banner if it isn't the `@actual-app/api` version the app is built with.
+
 ## Rules
 
 - **Connect and sync:** only what's needed to open the budget and pull the latest changes.
 - **Read:** accounts, balances, categories, budget months, transactions, payees, schedules: only what a screen needs.
 - **Never, until a decision allows it:** any function that creates, changes, deletes, imports or runs bank sync. The budget builder (Phase 2) will add only what its decision allows.
-- **Not used, though read-only:** `aqlQuery`/`runQuery` (a general query could read anything; the named functions above are enough), `exportBudget` (a full copy of the budget), `getNote`, `getRules`, `getTags`, `getPreferences`, `getServerVersion`. Adding one needs this list changed first.
+- **Not used, though read-only:** `aqlQuery`/`runQuery` (a general query could read anything; the named functions above are enough), `exportBudget` (a full copy of the budget), `getNote`, `getRules`, `getTags`, `getPreferences`. Adding one needs this list changed first.
 
 The fake-budget seed script (`dev/seed.ts`) is exempt: it writes the fake budget with `runImport`, `createAccount`, `createCategoryGroup`, `createCategory`, `addTransactions`, `setBudgetAmount` and `createSchedule`, against the fake server only.

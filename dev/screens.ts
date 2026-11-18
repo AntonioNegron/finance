@@ -18,13 +18,20 @@ try {
   await c.login();
   const cats = await (await c.get('/categories')).text();
   const firstCat = /href="(\/categories\/[^"]+)"/.exec(cats)?.[1]?.replace(/&amp;/g, '&');
-  const screens: [string, string][] = [
-    ['1-home', '/'],
-    ['2-spending', '/categories'],
-    ['2b-category', firstCat ?? '/categories'],
-    ['3-bills', '/bills'],
-    ['4-unusual', '/unusual'],
-    ['5-accounts', '/accounts'],
+  // before: runs before the page loads; onPage: runs on the loaded page.
+  type Screen = { name: string; path: string; before?: () => Promise<unknown>; onPage?: (page: import('playwright').Page) => Promise<unknown> };
+  const cinema = { key: 'p:Cinema 8' }; // the fake false-alarm bill
+  const screens: Screen[] = [
+    { name: '1-home', path: '/' },
+    { name: '2-spending', path: '/categories' },
+    { name: '2c-spending-open', path: '/categories', onPage: (p) => p.evaluate(() => document.querySelectorAll('details').forEach((d) => (d.open = true))) },
+    { name: '2b-category', path: firstCat ?? '/categories' },
+    { name: '2d-saving-groups', path: '/groups' },
+    { name: '3-bills', path: '/bills' },
+    // Hide Cinema 8 to show the Hidden list, then undo it for the next shots.
+    { name: '3b-bills-hidden', path: '/bills', before: () => c.post('/bills/hide', { ...cinema, hide: '1' }) },
+    { name: '4-unusual', path: '/unusual', before: () => c.post('/bills/hide', { ...cinema, hide: '0' }) },
+    { name: '5-accounts', path: '/accounts' },
   ];
 
   // User-level libraries from scripts/pw-libs.sh, if present.
@@ -45,11 +52,13 @@ try {
     await page.screenshot({ path: join(OUT, `0-login-${scheme}.png`) });
     await page.fill('#pw', loadDevEnv().DEV_APP_PASSWORD);
     await Promise.all([page.waitForURL(`${app.base}/`), page.click('button[type=submit]')]);
-    for (const [name, path] of screens) {
+    for (const { name, path, before, onPage } of screens) {
       // Grow the viewport to the whole page so the fixed tab bar sits at the
       // bottom, as on a phone, instead of mid-page in a full-page capture.
       await page.setViewportSize({ width: 390, height: 844 });
+      await before?.();
       await page.goto(app.base + path);
+      await onPage?.(page);
       const height = await page.evaluate(() => document.documentElement.scrollHeight);
       await page.setViewportSize({ width: 390, height: Math.max(844, height) });
       await page.screenshot({ path: join(OUT, `${name}-${scheme}.png`) });
