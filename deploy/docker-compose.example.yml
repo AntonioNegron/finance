@@ -1,0 +1,30 @@
+# Example only: Phase 1 writes the real one for the OptiPlex (/opt/finance).
+# No secrets here: the secrets file is Antonio's, root + finance only.
+services:
+  finance:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: finance-app:local
+    restart: unless-stopped
+    # No published port: only Caddy reaches it (Phase 1).
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      ACTUAL_SERVER_URL: http://actual:5006   # Phase 1: the Actual server's name on the private network
+      ACTUAL_SYNC_ID: REPLACE_WITH_SYNC_ID     # not secret; from Actual's Settings > Advanced
+      FINANCE_SYNC_MINUTES: "15"
+      FINANCE_SECRETS_FILE: /run/secrets/finance.env
+      TZ: REPLACE_WITH_TIME_ZONE               # Phase 1: Antonio's time zone, for "this month" and bill dates
+    volumes:
+      - ./data:/data                                        # the app's own data folder
+      - ./secrets/finance.env:/run/secrets/finance.env:ro   # ACTUAL_PASSWORD, FINANCE_LOGIN_HASH, ...
+    # Phase 1 adds here:
+    #   networks: a private network with no internet that reaches only the
+    #   Actual server, plus the network Caddy uses to route finance.<home name>
+    #   to this container's port 8080.
