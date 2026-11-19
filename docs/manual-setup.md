@@ -8,12 +8,21 @@ None of these steps shares an amount, a payee or a password with anyone.
 
 *Status: done 2026-11-17. Client and server v26.4.0 (26.11.0 offered); end-to-end encryption off.*
 
-## 2. Update Actual to 26.11.0, pinned
+## 2. Update Actual to 26.11.0, pinned, logs out of Dozzle
 
-*Needs: 1. Status: to do. [Decision](decisions/2026-11-17-actual-26-11.md)*
+*Needs: 1. Status: to do. [Decision](decisions/2026-11-17-actual-26-11.md); logs: [F1-1 report](tasks/F1-1.report.md#dozzle-and-actuals-logs-antonio-decides), option 1*
 
 1. **Backup:** in Actual, Settings → **Export data**; keep the file on your laptop or phone.
-2. **OptiPlex:** change the image from `latest` to `26.11.0` in Actual's compose file, pull and restart (Claude gives the exact command in chat).
+2. **OptiPlex:**
+   ```
+   cd /opt/actual && f=$(ls docker-compose.y*ml compose.y*ml 2>/dev/null | head -1) && s=$(sudo docker compose config --services | head -1) && o="${f%.y*ml}.override.yml" && [ ! -e "$o" ] && sudo cp "$f" "$f.bak-$(date +%F)" && printf 'services:\n  %s:\n    logging:\n      driver: syslog\n      options:\n        syslog-address: unixgram:///dev/log\n        tag: "{{.Name}}"\n        cache-disabled: "true"\n' "$s" | sudo tee "$o" >/dev/null && sudo sed -i 's#actualbudget/actual-server:latest#actualbudget/actual-server:26.11.0#' "$f" && sudo docker compose config | grep -q "actual-server:26.11.0" && sudo docker compose config | grep -E "image:|driver:" && sudo docker compose pull && sudo docker compose up -d && sudo docker compose ps
+   ```
+   - finds Actual's compose file and its service, and saves a copy of the file
+   - adds a small override file that sends Actual's logs to the OptiPlex's journal only (Dozzle and `docker logs` can't read them)
+   - changes the image from `latest` to `26.11.0`, and stops before downloading anything if that didn't take
+   - shows the image and log driver, downloads 26.11.0, restarts Actual and shows it's up
+   - Actual's logs afterwards: `sudo journalctl -t <container name> -n 50`
+   - undo: `sudo rm <override file>`, restore the `.bak` copy, `sudo docker compose up -d`
 3. **Check:** Actual's Settings shows client and server **v26.11.0**; your budget and accounts look as before; bank sync still works.
 4. Tell Claude: done, or the error.
 
